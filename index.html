@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Speaking Gym – Convenience Store Drinks</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --bg: #f5f8fa;
+      --card: #ffffff;
+      --blue-light: #e0e7ff;
+      --blue-mid: #818cf8;
+      --blue-dark: #232340;
+      --green-light: #d1fae5;
+      --green-dark: #065f46;
+      --green-mid: #34d399;
+      --orange-light: #fed7aa;
+      --orange-dark: #c2410c;
+      --gray: #64748b;
+      --gray-light: #f1f5f9;
+      --radius: 14px;
+      --shadow: 0 2px 12px rgba(99,102,241,.10);
+    }
+    body { margin:0; font-family: -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--blue-dark); }
+
+    /* ── BRANDING HEADER ── */
+    .brand-header {
+      width: 100%;
+      background: var(--blue-dark);
+      color: #fff;
+      text-align: center;
+      padding: 8px 16px 7px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .brand-header span { opacity: .55; font-weight: 400; }
+
+    /* ── VERTICAL ROOT ── */
+    #vertical-root {
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      height: calc(100vh - 33px);
+      overflow: hidden;
+    }
+
+    /* ── STICKY TOP ── */
+    #fixed-top-group-vert {
+      flex-shrink: 0;
+      background: var(--bg);
+      box-shadow: 0 4px 16px #d5dae522;
+    }
+    #player-vert {
+      width: 100%;
+      aspect-ratio: 16/9;
+      border: none;
+      display: block;
+      background: #000;
+    }
+
+    /* ── CONTROLS AREA ── */
+    .controls-area {
+      padding: 10px 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* progress bar */
+    .progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .progress-bar-bg {
+      flex: 1;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--blue-mid);
+      border-radius: 99px;
+      transition: width .4s;
+    }
+    .progress-text { font-size: 12px; color: var(--gray); white-space: nowrap; }
+
+    /* view tabs */
+    .view-tabs {
+      display: flex;
+      background: var(--gray-light);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 3px;
+    }
+    .view-tab {
+      flex: 1;
+      padding: 6px 0;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray);
+      cursor: pointer;
+      transition: .15s;
+    }
+    .view-tab.active {
+      background: var(--card);
+      color: var(--blue-dark);
+      box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    }
+
+    /* icon buttons row */
+    .icon-btns {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .icon-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: 9px;
+      border: none;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: .15s;
+      white-space: nowrap;
+    }
+    .icon-btn.mode-btn  { background: var(--orange-light); color: var(--orange-dark); }
+    .icon-btn.mode-btn.active { background: var(--orange-dark); color: #fff; }
+    .icon-btn.trans-btn { background: var(--green-light); color: var(--green-dark); }
+    .icon-btn.trans-btn.loading { opacity: .7; cursor: wait; }
+    .icon-btn.trans-btn.active { background: var(--green-dark); color: #fff; }
+    .icon-btn.layout-btn { background: var(--gray-light); color: var(--gray); margin-left: auto; }
+
+    /* ── SUBS LIST ── */
+    #subs-vert {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 10px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* sub row */
+    .sub-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      border-radius: var(--radius);
+      transition: box-shadow .15s;
+    }
+    .sub-row.playing {
+      animation: pulse-row 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse-row {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,.0); }
+      50%       { box-shadow: 0 0 0 5px rgba(99,102,241,.18); }
+    }
+    .sub-row.selected .sub-btn {
+      outline: 2.5px solid var(--blue-mid);
+      outline-offset: 1px;
+    }
+
+    /* sub button */
+    .sub-btn {
+      flex: 1;
+      min-width: 0;
+      padding: 11px 13px;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      text-align: left;
+      cursor: pointer;
+      transition: background .13s;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+    .sub-btn:active { background: #a5b4fc; }
+    .sub-btn.learned { background: var(--green-light); }
+    .sub-btn .eng {
+      display: block;
+      font-size: 15px;
+      color: var(--blue-dark);
+    }
+    .sub-btn.learned .eng { color: #065f46; text-decoration: line-through; }
+
+    /* accordion korean */
+    .sub-btn .kor-wrap {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height .25s ease, margin-top .2s;
+      margin-top: 0;
+    }
+    .sub-btn .kor-wrap.open {
+      max-height: 80px;
+      margin-top: 5px;
+    }
+    .sub-btn .kor {
+      font-size: 12px;
+      color: var(--gray);
+      font-style: italic;
+      display: block;
+      padding-top: 4px;
+      border-top: 1px solid #c7d2fe;
+    }
+    .sub-btn.learned .kor { color: var(--green-mid); border-top-color: #6ee7b7; }
+
+    /* action buttons */
+    .sub-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .act-btn {
+      width: 38px;
+      height: 38px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      border-radius: 9px;
+      transition: background .12s;
+    }
+    .act-btn:hover { background: #e2e8f0; }
+    .act-btn.checked { color: #22c55e; }
+    .act-btn.hidden-active { color: #475569; background: #e2e8f0; }
+
+    /* ── HORIZONTAL LAYOUT ── */
+    .container { display: contents; }
+    .container.horizontal {
+      display: flex;
+      width: 100vw;
+      height: calc(100vh - 33px);
+      flex-direction: row;
+    }
+    .container.horizontal .left-panel {
+      width: 40%;
+      min-width: 300px;
+      position: sticky;
+      top: 33px;
+      height: calc(100vh - 33px);
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+    }
+    .container.horizontal .right-panel {
+      flex: 1;
+      height: calc(100vh - 33px);
+      overflow-y: auto;
+      border-left: 2px solid #dbeafe;
+      background: #f9fafb;
+    }
+    #left-panel, #right-panel { display: none; }
+    .container.horizontal #left-panel,
+    .container.horizontal #right-panel { display: flex; flex-direction: column; }
+    #vertical-root.hidden { display: none; }
+
+    /* horizontal subs */
+    #subs {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 12px 28px;
+    }
+    .container.horizontal .sub-btn { font-size: 18px; }
+    .container.horizontal .sub-btn .eng { font-size: 17px; }
+    .container.horizontal .sub-btn .kor { font-size: 13px; }
+    .container.horizontal .act-btn { width: 44px; height: 44px; font-size: 20px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 520px) {
+      #vertical-root { max-width: 100vw; }
+      .sub-btn { font-size: 14px; }
+      .sub-btn .eng { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- BRANDING -->
+<div class="brand-header">
+  🏋️ Speaking Gym <span>with Noah</span>
+  &nbsp;·&nbsp;
+  <span>Convenience Store Drinks</span>
+</div>
+
+<div class="container" id="container">
+
+  <!-- 가로모드 왼쪽 패널 -->
+  <div class="left-panel" id="left-panel">
+    <div id="fixed-top-group">
+      <iframe id="player" src="https://www.youtube.com/embed/hZzckey5frk?enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen style="width:100%;aspect-ratio:16/9;border:none;display:block;background:#000;"></iframe>
+      <div class="controls-area">
+        <div class="progress-wrap">
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+          <div class="progress-text" id="progress"></div>
+        </div>
+        <div class="view-tabs">
+          <button class="view-tab active" id="show-all">전체 보기</button>
+          <button class="view-tab" id="show-learned">✔️ 외웠음만</button>
+        </div>
+        <div class="icon-btns">
+          <button class="icon-btn mode-btn" id="mode-btn">▶ 한줄</button>
+          <button class="icon-btn trans-btn" id="translate-btn">🇰🇷 번역</button>
+          <button class="icon-btn layout-btn" id="layout-btn">📱 세로</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 가로모드 오른쪽 패널 -->
+  <div class="right-panel" id="right-panel">
+    <div id="subs"></div>
+  </div>
+
+  <!-- 세로모드 -->
+  <div id="vertical-root">
+    <div id="fixed-top-group-vert">
+      <iframe id="player-vert" src="https://www.youtube.com/embed/hZzckey5frk?enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      <div class="controls-area">
+        <div class="progress-wrap">
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill-vert" style="width:0%"></div></div>
+          <div class="progress-text" id="progress-vert"></div>
+        </div>
+        <div class="view-tabs">
+          <button class="view-tab active" id="show-all-vert">전체 보기</button>
+          <button class="view-tab" id="show-learned-vert">✔️ 외웠음만</button>
+        </div>
+        <div class="icon-btns">
+          <button class="icon-btn mode-btn" id="mode-btn-vert">▶ 한줄</button>
+          <button class="icon-btn trans-btn" id="translate-btn-vert">🇰🇷 번역</button>
+          <button class="icon-btn layout-btn" id="layout-btn-vert">🖥 가로</button>
+        </div>
+      </div>
+    </div>
+    <div id="subs-vert"></div>
+  </div>
+
+</div>
+
+<script>
+const SUBS = [
+  { start: 16.716, end: 20.72,  text: "Good morning, Doobies Welcome to Convee Convo" },
+  { start: 20.72,  end: 23.39,  text: "where we mix a little bit of everything" },
+  { start: 23.39,  end: 26.726, text: "Today's guest, he is the master of brunch talk" },
+  { start: 26.726, end: 28.495, text: "The master of aesthetics" },
+  { start: 28.528, end: 32.065, text: "Please welcome Nigel, aka SimplyNi" },
+  { start: 54.954, end: 56.384, text: "I'm going to pretend that camera is your mom" },
+  { start: 56.395, end: 57.223, text: "Is she here by the way?" },
+  { start: 60.46,  end: 61.461, text: "My mom is gorgeous" },
+  { start: 61.461, end: 62.429, text: "She's stunning" },
+  { start: 62.429, end: 63.797, text: "She's going to be very happy" },
+  { start: 63.797, end: 64.798, text: "The queen" },
+  { start: 64.798, end: 66.299, text: "I hope she's having a great day" },
+  { start: 66.299, end: 69.269, text: "She's having the most great morning" },
+  { start: 69.269, end: 69.869, text: "Mommy, sorry" },
+  { start: 71.304, end: 72.972, text: "I'm dying" },
+  { start: 72.972, end: 74.219, text: "My mom loves your videos" },
+  { start: 74.23,  end: 74.741, text: "Does she?" },
+  { start: 74.741, end: 76.809, text: "Yeah, I show her all the time" },
+  { start: 76.82,  end: 77.444, text: "Sorry" },
+  { start: 78.978, end: 82.148, text: "I actually get more people asking about my mom than" },
+  { start: 82.148, end: 84.717, text: "maybe like oh like I want to see your mom's toes" },
+  { start: 86.519, end: 87.854, text: "She is fine" },
+  { start: 87.854, end: 89.255, text: "She's really aged well" },
+  { start: 89.255, end: 91.283, text: "Remember when the internet was obsessed with your feet?" },
+  { start: 91.294, end: 92.692, text: "We need to talk about that at one point" },
+  { start: 92.692, end: 94.16,  text: "That's a whole other conversation" },
+  { start: 94.16,  end: 96.329, text: "You want to see my socks today?" },
+  { start: 96.329, end: 97.53,  text: "Actually, are they dirty?" },
+  { start: 97.53,  end: 98.998, text: "They're a little dirty and sweaty" },
+  { start: 98.998, end: 100.733,text: "But I'm wearing tabi socks today" },
+  { start: 100.733,end: 102.001,text: "Oh my God" },
+  { start: 102.001,end: 103.503,text: "That's so funny" },
+  { start: 103.503,end: 104.37, text: "I love them" },
+  { start: 104.37, end: 106.84, text: "Honestly, it's like you can grab things" },
+  { start: 106.84, end: 108.007,text: "Okay, I'm not going to do that" },
+  { start: 108.007,end: 109.909,text: "This is a whole different genre" },
+  { start: 109.909,end: 112.846,text: "Okay, we got to keep this PG" },
+  { start: 118.518,end: 120.92, text: "Good morning" },
+  { start: 123.59, end: 125.558,text: "Getting a brunch club" },
+  { start: 125.558,end: 126.359,text: "Okay" },
+  { start: 126.359,end: 128.928,text: "So since you say 'Good Morning' in your videos" },
+  { start: 128.928,end: 130.93, text: "we are going to be serving you" },
+  { start: 130.93, end: 132.365,text: "this drink over here" },
+  { start: 132.365,end: 134.734,text: "which is called 'Achim Haetsal'" },
+  { start: 134.734,end: 137.203,text: "and it just translates to 'Morning Sunshine'" },
+  { start: 137.203,end: 138.338,text: "Oh really, amazing" },
+  { start: 138.338,end: 142.408,text: "It's made from like washed rice and a bunch of different grain mixtures" },
+  { start: 142.408,end: 143.877,text: "It's like cozy" },
+  { start: 143.877,end: 145.979,text: "Has that really nice malty flavor" },
+  { start: 145.979,end: 147.814,text: "- You want to give it a try? Just as is? - Absolutely" },
+  { start: 176.176,end: 178.958,text: "You can taste kind of the really subtleness" },
+  { start: 178.969,end: 183.249,text: "and how the flavors are melting in your mouth, you know?" },
+  { start: 184.284,end: 188.021,text: "Also I'll keep doing this and I hope you don't find it weird" },
+  { start: 188.021,end: 192.158,text: "You know, our nose has more of a flavor profile than our tongue" },
+  { start: 192.158,end: 194.227,text: "So I tend to always smell things" },
+  { start: 194.227,end: 195.962,text: "I smell everything too" },
+  { start: 196.729,end: 199.465,text: "Kevin always teases me but even when I'm like..." },
+  { start: 200.2,  end: 201.868,text: "I don't know if I should say this" },
+  { start: 201.868,end: 203.703,text: "I'm like, on the edge of my seat" },
+  { start: 203.703,end: 205.171,text: "Yeah, I know like after I..." },
+  { start: 205.171,end: 206.339,text: "Okay, I'm sure" },
+  { start: 206.339,end: 208.074,text: "I'm not singular in this." },
+  { start: 208.074,end: 209.642,text: "After I pop a pimple" },
+  { start: 209.642,end: 212.679,text: "I cannot resist not smelling it" },
+  { start: 212.679,end: 214.514,text: "I'm ashamed to say I do it too" },
+];
+
+// ── STATE ──────────────────────────────────────────────────
+const STORAGE_KEY = 'sg_convenience_v2';
+let status = {};
+let koreans = {};
+let showKorean = false;
+let openKorIdxs = new Set(); // 아코디언으로 열린 항목들
+let layoutMode = 'vertical';
+let playingSubIdx = null;
+let pausedSubIdx = null;
+let paused = false;
+let playMode = 'single';
+let timeoutId = null;
+let player, playerVert;
+let currentView = 'all';
+let selectedSubIdx = null;
+
+// ── STORAGE ───────────────────────────────────────────────
+function loadStatus() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    status   = saved.status   || {};
+    koreans  = saved.koreans  || {};
+    for (let i = 0; i < SUBS.length; i++) {
+      if (!status[i]) status[i] = { hide: false, learned: false };
+    }
+  } catch { status = {}; koreans = {}; }
+}
+function saveStatus() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ status, koreans }));
+}
+
+// ── RENDER ────────────────────────────────────────────────
+function renderSubs(view = 'all', mode = 'vertical') {
+  const subsDiv = mode === 'vertical'
+    ? document.getElementById('subs-vert')
+    : document.getElementById('subs');
+  subsDiv.innerHTML = '';
+
+  let learned = 0;
+  SUBS.forEach((sub, idx) => {
+    if (view === 'learned' && !status[idx].learned) return;
+    if (status[idx].learned) learned++;
+
+    const row = document.createElement('div');
+    row.className = 'sub-row'
+      + (idx === selectedSubIdx ? ' selected' : '')
+      + (idx === playingSubIdx  ? ' playing'  : '');
+    row.dataset.idx = idx;
+
+    // ── main button ──
+    const btn = document.createElement('button');
+    btn.className = 'sub-btn' + (status[idx].learned ? ' learned' : '');
+
+    const engSpan = document.createElement('span');
+    engSpan.className = 'eng';
+    engSpan.textContent = status[idx].hide ? '🙈' : sub.text;
+    btn.appendChild(engSpan);
+
+    // Korean accordion
+    const korWrap = document.createElement('span');
+    korWrap.className = 'kor-wrap' + (openKorIdxs.has(idx) ? ' open' : '');
+    const korSpan = document.createElement('span');
+    korSpan.className = 'kor';
+    if (showKorean) {
+      korSpan.textContent = koreans[idx] || '...';
+    }
+    korWrap.appendChild(korSpan);
+    btn.appendChild(korWrap);
+
+    btn.onclick = (e) => {
+      // 번역 켜진 상태에서 클릭하면 아코디언 토글 + 재생
+      if (showKorean && !status[idx].hide) {
+        if (openKorIdxs.has(idx)) openKorIdxs.delete(idx);
+        else openKorIdxs.add(idx);
+      }
+      playPauseOrRestartSub(idx, mode);
+    };
+
+    // ── action buttons ──
+    const actions = document.createElement('div');
+    actions.className = 'sub-actions';
+
+    const hideBtn = document.createElement('button');
+    hideBtn.className = 'act-btn' + (status[idx].hide ? ' hidden-active' : '');
+    hideBtn.textContent = '🙈';
+    hideBtn.title = status[idx].hide ? '보이기' : '숨기기';
+    hideBtn.onclick = (e) => {
+      e.stopPropagation();
+      status[idx].hide = !status[idx].hide;
+      saveStatus(); renderSubs(currentView, mode);
+    };
+
+    const checkBtn = document.createElement('button');
+    checkBtn.className = 'act-btn' + (status[idx].learned ? ' checked' : '');
+    checkBtn.textContent = '✔️';
+    checkBtn.title = status[idx].learned ? '해제' : '외웠음';
+    checkBtn.onclick = (e) => {
+      e.stopPropagation();
+      status[idx].learned = !status[idx].learned;
+      saveStatus(); renderSubs(currentView, mode);
+    };
+
+    actions.appendChild(hideBtn);
+    actions.appendChild(checkBtn);
+    row.appendChild(btn);
+    row.appendChild(actions);
+    subsDiv.appendChild(row);
+  });
+
+  // progress
+  const pct = SUBS.length ? Math.round(learned / SUBS.length * 100) : 0;
+  const fillId  = mode === 'vertical' ? 'progress-fill-vert' : 'progress-fill';
+  const textId  = mode === 'vertical' ? 'progress-vert'      : 'progress';
+  const fillEl  = document.getElementById(fillId);
+  const textEl  = document.getElementById(textId);
+  if (fillEl) fillEl.style.width = pct + '%';
+  if (textEl) textEl.innerHTML = `<b>${pct}%</b> (${learned}/${SUBS.length})`;
+}
+
+// ── AUTO SCROLL ────────────────────────────────────────────
+function scrollToSub(idx, mode) {
+  const subsDiv = mode === 'vertical'
+    ? document.getElementById('subs-vert')
+    : document.getElementById('subs');
+  const rows = subsDiv.querySelectorAll('.sub-row');
+  // find matching row by dataset
+  for (const row of rows) {
+    if (parseInt(row.dataset.idx) === idx) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      break;
+    }
+  }
+}
+
+// ── TRANSLATE ──────────────────────────────────────────────
+async function translateAll(mode) {
+  const btnId = mode === 'vertical' ? 'translate-btn-vert' : 'translate-btn';
+  const btn   = document.getElementById(btnId);
+
+  if (showKorean && Object.keys(koreans).length > 0) {
+    showKorean = false;
+    openKorIdxs.clear();
+    btn.classList.remove('active');
+    btn.textContent = '🇰🇷 번역';
+    renderSubs(currentView, mode); return;
+  }
+  if (Object.keys(koreans).length > 0) {
+    showKorean = true;
+    btn.classList.add('active');
+    btn.textContent = '🇰🇷 번역 숨기기';
+    renderSubs(currentView, mode); return;
+  }
+
+  btn.classList.add('loading');
+  btn.textContent = '번역 중...';
+
+  const texts = SUBS.map((s, i) => `${i}|${s.text}`).join('\n');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `Translate each English subtitle line to natural Korean.
+Input format: "index|english"
+Return ONLY a JSON object: {"0":"번역","1":"번역",...}
+No markdown, no extra text.`,
+        messages: [{ role: 'user', content: texts }]
+      })
+    });
+    const data = await res.json();
+    const raw  = data.content.find(c => c.type === 'text')?.text || '{}';
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    Object.assign(koreans, parsed);
+    saveStatus();
+    showKorean = true;
+    btn.classList.remove('loading');
+    btn.classList.add('active');
+    btn.textContent = '🇰🇷 번역 숨기기';
+    // sync other button
+    const otherId = mode === 'vertical' ? 'translate-btn' : 'translate-btn-vert';
+    const other = document.getElementById(otherId);
+    other.classList.add('active');
+    other.textContent = '🇰🇷 번역 숨기기';
+    renderSubs(currentView, mode);
+  } catch(e) {
+    btn.classList.remove('loading');
+    btn.textContent = '🇰🇷 재시도';
+    console.error(e);
+  }
+}
+
+// ── PLAYBACK ───────────────────────────────────────────────
+function playPauseOrRestartSub(idx, mode = 'vertical') {
+  selectedSubIdx = idx;
+  const curPlayer = mode === 'vertical' ? playerVert : player;
+  if (!curPlayer?.seekTo) { renderSubs(currentView, mode); return; }
+  const state = curPlayer.getPlayerState();
+
+  if (playingSubIdx !== idx) {
+    startPlay(idx, mode);
+    return;
+  }
+  if (state === 1) {
+    curPlayer.pauseVideo();
+    if (timeoutId) clearTimeout(timeoutId);
+    paused = true; pausedSubIdx = idx; playingSubIdx = null;
+    renderSubs(currentView, mode); return;
+  }
+  if (state === 2 && paused && pausedSubIdx === idx) {
+    startPlay(idx, mode); return;
+  }
+  startPlay(idx, mode);
+}
+
+function startPlay(idx, mode) {
+  playingSubIdx = idx; paused = false; pausedSubIdx = null;
+  renderSubs(currentView, mode);
+  scrollToSub(idx, mode);
+
+  const curPlayer = mode === 'vertical' ? playerVert : player;
+  const start = SUBS[idx].start;
+  const end   = playMode === 'single'
+    ? SUBS[idx].end
+    : (SUBS[idx+1] ? SUBS[idx+1].end : SUBS[idx].end);
+
+  curPlayer.seekTo(start, true);
+  curPlayer.playVideo();
+  if (timeoutId) clearTimeout(timeoutId);
+  timeoutId = setTimeout(() => {
+    curPlayer.pauseVideo();
+    playingSubIdx = null;
+    renderSubs(currentView, mode);
+  }, (end - start) * 1000);
+}
+
+// ── LAYOUT ────────────────────────────────────────────────
+function setLayout(newMode) {
+  layoutMode = newMode;
+  const cont     = document.getElementById('container');
+  const vertRoot = document.getElementById('vertical-root');
+  if (newMode === 'horizontal') {
+    cont.classList.add('horizontal');
+    vertRoot.classList.add('hidden');
+    renderSubs(currentView, 'horizontal');
+  } else {
+    cont.classList.remove('horizontal');
+    vertRoot.classList.remove('hidden');
+    renderSubs(currentView, 'vertical');
+  }
+}
+
+// ── HANDLERS ──────────────────────────────────────────────
+function syncModeBtn(text, isActive) {
+  ['mode-btn', 'mode-btn-vert'].forEach(id => {
+    const b = document.getElementById(id);
+    b.textContent = text;
+    b.classList.toggle('active', isActive);
+  });
+}
+
+function setHandlers() {
+  // view tabs — vert
+  document.getElementById('show-all-vert').onclick = function() {
+    currentView = 'all';
+    this.classList.add('active');
+    document.getElementById('show-learned-vert').classList.remove('active');
+    renderSubs('all', 'vertical');
+  };
+  document.getElementById('show-learned-vert').onclick = function() {
+    currentView = 'learned';
+    this.classList.add('active');
+    document.getElementById('show-all-vert').classList.remove('active');
+    renderSubs('learned', 'vertical');
+  };
+  // view tabs — horiz
+  document.getElementById('show-all').onclick = function() {
+    currentView = 'all';
+    this.classList.add('active');
+    document.getElementById('show-learned').classList.remove('active');
+    renderSubs('all', 'horizontal');
+  };
+  document.getElementById('show-learned').onclick = function() {
+    currentView = 'learned';
+    this.classList.add('active');
+    document.getElementById('show-all').classList.remove('active');
+    renderSubs('learned', 'horizontal');
+  };
+  // mode buttons
+  document.getElementById('mode-btn-vert').onclick = function() {
+    playMode = playMode === 'single' ? 'next' : 'single';
+    syncModeBtn(playMode === 'single' ? '▶ 한줄' : '▶▶ 다음줄', playMode === 'next');
+  };
+  document.getElementById('mode-btn').onclick = function() {
+    playMode = playMode === 'single' ? 'next' : 'single';
+    syncModeBtn(playMode === 'single' ? '▶ 한줄' : '▶▶ 다음줄', playMode === 'next');
+  };
+  // translate
+  document.getElementById('translate-btn-vert').onclick = () => translateAll('vertical');
+  document.getElementById('translate-btn').onclick      = () => translateAll('horizontal');
+  // layout
+  document.getElementById('layout-btn-vert').onclick = () => setLayout('horizontal');
+  document.getElementById('layout-btn').onclick      = () => setLayout('vertical');
+}
+
+// ── YOUTUBE API ───────────────────────────────────────────
+function onYouTubeIframeAPIReady() {
+  player     = new YT.Player('player');
+  playerVert = new YT.Player('player-vert');
+}
+window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+
+window.onload = function() {
+  loadStatus();
+  setHandlers();
+  setLayout('vertical');
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.body.appendChild(tag);
+};
+</script>
+</body>
+</html>
