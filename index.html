@@ -1,430 +1,548 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Speaking Gym – Convenience Store Drinks</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg:           #0f172a;
-      --bg2:          #1e293b;
-      --bg3:          #334155;
-      --accent:       #6366f1;
-      --accent-light: #a5b4fc;
-      --accent-glow:  rgba(99,102,241,.25);
-      --green:        #10b981;
-      --orange:       #f59e0b;
-      --white:        #f8fafc;
-      --muted:        #94a3b8;
-      --border:       rgba(255,255,255,.08);
-      --v-bg:         #f5f8fa;
-      --v-blue:       #e0e7ff;
-      --v-blue-mid:   #818cf8;
-      --v-dark:       #1e293b;
-      --v-gray:       #64748b;
-      --v-green:      #d1fae5;
-      --v-green-dark: #065f46;
-    }
-    body { font-family: -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--white); overflow: hidden; height: 100vh; }
-
-    /* ═══ HORIZONTAL (TEACHER) ═══ */
-    #horiz-root { display: flex; width: 100vw; height: 100vh; }
-    #horiz-root.hidden { display: none; }
-
-    .h-left {
-      width: 38%; min-width: 300px;
-      background: var(--bg);
-      display: flex; flex-direction: column;
-      border-right: 1px solid var(--border);
-      height: 100vh;
-    }
-    .h-top-bar {
-      padding: 12px 18px;
-      display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1px solid var(--border); flex-shrink: 0;
-    }
-    .brand { font-size: 13px; font-weight: 700; letter-spacing: .05em; color: var(--accent-light); }
-    .brand-sub { font-weight: 400; color: var(--muted); font-size: 11px; margin-top: 2px; }
-    .layout-toggle {
-      background: var(--bg3); border: none; color: var(--muted);
-      font-size: 12px; padding: 5px 11px; border-radius: 8px; cursor: pointer; transition: .15s;
-    }
-    .layout-toggle:hover { background: var(--accent); color: #fff; }
-
-    /* video centered vertically */
-    .h-video-wrap {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: stretch; justify-content: center; padding: 0 16px; gap: 14px;
-    }
-    .h-video-inner { border-radius: 14px; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,.55); }
-    .h-video-inner iframe { width: 100%; aspect-ratio: 16/9; border: none; display: block; }
-
-    /* stats below video */
-    .h-stats { display: flex; gap: 10px; }
-    .h-stat {
-      flex: 1; background: var(--bg2); border-radius: 10px;
-      padding: 10px 0; border: 1px solid var(--border); text-align: center;
-    }
-    .h-stat-num { font-size: 20px; font-weight: 800; }
-    .h-stat-label { font-size: 9px; color: var(--muted); margin-top: 2px; letter-spacing: .06em; text-transform: uppercase; }
-
-    .h-prog { }
-    .h-prog-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
-    .h-prog-bar { height: 4px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
-    .h-prog-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-light)); border-radius: 99px; transition: width .5s; }
-
-    /* controls bottom */
-    .h-controls {
-      padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
-      border-top: 1px solid var(--border);
-    }
-    .h-tabs {
-      display: flex; background: var(--bg2); border-radius: 9px;
-      padding: 3px; gap: 3px; border: 1px solid var(--border);
-    }
-    .h-tab {
-      flex: 1; padding: 7px 0; border: none; background: transparent;
-      border-radius: 7px; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; transition: .15s;
-    }
-    .h-tab.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px var(--accent-glow); }
-    .h-btn-row { display: flex; gap: 8px; }
-    .h-btn {
-      flex: 1; padding: 8px 0; border: none; border-radius: 9px;
-      font-size: 12px; font-weight: 600; cursor: pointer; transition: .15s;
-    }
-    .h-btn.mode { background: rgba(245,158,11,.15); color: var(--orange); border: 1px solid rgba(245,158,11,.3); }
-    .h-btn.mode.active { background: var(--orange); color: #000; }
-    .h-btn.trans { background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.3); }
-    .h-btn.trans.active { background: var(--green); color: #fff; }
-
-    /* right subs */
-    .h-right { flex: 1; background: var(--bg2); overflow-y: auto; height: 100vh; display: flex; flex-direction: column; }
-    .h-subs-header {
-      padding: 14px 18px 10px; font-size: 10px; font-weight: 700;
-      letter-spacing: .12em; color: var(--muted); border-bottom: 1px solid var(--border);
-      text-transform: uppercase; flex-shrink: 0;
-    }
-    #subs-h { flex: 1; padding: 10px 12px 32px; display: flex; flex-direction: column; gap: 5px; }
-
-    .sub-row-h { display: flex; align-items: flex-start; gap: 7px; border-radius: 12px; }
-    .sub-row-h.playing { animation: glow-h 1.4s ease-in-out infinite; }
-    @keyframes glow-h {
-      0%,100% { box-shadow: none; }
-      50% { box-shadow: 0 0 0 3px var(--accent-glow), 0 0 18px var(--accent-glow); }
-    }
-    .sub-btn-h {
-      flex: 1; padding: 11px 15px; border-radius: 11px;
-      border: 1px solid var(--border); background: var(--bg);
-      color: var(--white); text-align: left; cursor: pointer; transition: .13s;
-      line-height: 1.5; word-break: break-word;
-    }
-    .sub-btn-h:hover { background: var(--bg3); border-color: var(--accent); }
-    .sub-row-h.selected .sub-btn-h { border-color: var(--accent); background: rgba(99,102,241,.12); }
-    .sub-btn-h.learned { background: rgba(16,185,129,.1); border-color: rgba(16,185,129,.35); }
-    .eng-h { display: block; font-size: 17px; font-weight: 500; }
-    .sub-btn-h.learned .eng-h { color: var(--green); text-decoration: line-through; opacity: .7; }
-    .kor-wrap-h { overflow: hidden; max-height: 0; transition: max-height .25s ease, margin-top .2s; }
-    .kor-wrap-h.open { max-height: 60px; margin-top: 5px; }
-    .kor-h { display: block; font-size: 13px; color: var(--muted); font-style: italic; padding-top: 5px; border-top: 1px solid var(--border); }
-    .sub-btn-h.learned .kor-h { color: var(--green); }
-    .sub-acts-h { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
-    .act-h {
-      width: 34px; height: 34px; font-size: 15px; border: none; background: transparent;
-      cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-      color: var(--muted); transition: .12s;
-    }
-    .act-h:hover { background: var(--bg3); color: var(--white); }
-    .act-h.checked { color: var(--green); }
-    .act-h.hide-on { background: var(--bg3); color: var(--white); }
-
-    /* ═══ VERTICAL (STUDENT) ═══ */
-    #vert-root {
-      width: 100%; max-width: 460px; margin: 0 auto;
-      display: flex; flex-direction: column;
-      background: var(--v-bg); height: 100vh; overflow: hidden; color: var(--v-dark);
-    }
-    #vert-root.hidden { display: none; }
-
-    .v-header {
-      background: var(--v-dark); color: #fff; padding: 10px 16px;
-      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-    }
-    .v-brand { font-size: 13px; font-weight: 700; letter-spacing: .03em; }
-    .v-brand span { opacity: .5; font-weight: 400; }
-    .v-layout-btn {
-      background: rgba(255,255,255,.12); border: none; color: #fff;
-      font-size: 11px; padding: 4px 10px; border-radius: 7px; cursor: pointer;
-    }
-
-    .v-sticky { flex-shrink: 0; background: var(--v-bg); box-shadow: 0 3px 12px rgba(0,0,0,.06); }
-    #player-vert { width: 100%; aspect-ratio: 16/9; border: none; display: block; background: #000; }
-
-    .v-prog-area { padding: 10px 14px 6px; display: flex; align-items: center; gap: 12px; }
-    .v-ring-wrap { position: relative; flex-shrink: 0; }
-    .v-ring-wrap svg { transform: rotate(-90deg); }
-    .v-ring-bg { fill: none; stroke: #e2e8f0; stroke-width: 4; }
-    .v-ring-fill { fill: none; stroke: var(--v-blue-mid); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset .5s ease; }
-    .v-ring-text {
-      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700; color: var(--v-blue-mid);
-    }
-    .v-prog-labels { flex: 1; min-width: 0; }
-    .v-prog-title { font-size: 13px; font-weight: 700; color: var(--v-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .v-prog-sub { font-size: 11px; color: var(--v-gray); margin-top: 2px; }
-
-    .v-controls { padding: 6px 12px 10px; display: flex; flex-direction: column; gap: 6px; }
-    .v-tabs { display: flex; background: #e8edf2; border-radius: 9px; padding: 2px; gap: 2px; }
-    .v-tab { flex: 1; padding: 6px 0; border: none; background: transparent; border-radius: 7px; font-size: 12px; font-weight: 600; color: var(--v-gray); cursor: pointer; transition: .15s; }
-    .v-tab.active { background: #fff; color: var(--v-dark); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
-    .v-btn-row { display: flex; gap: 6px; }
-    .v-btn { flex: 1; padding: 7px 0; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: .15s; }
-    .v-btn.mode  { background: #fed7aa; color: #c2410c; }
-    .v-btn.mode.active { background: #c2410c; color: #fff; }
-    .v-btn.trans { background: #d1fae5; color: #065f46; }
-    .v-btn.trans.active { background: #065f46; color: #fff; }
-
-    #subs-v { flex: 1; overflow-y: auto; padding: 8px 10px 24px; display: flex; flex-direction: column; gap: 7px; }
-    .sub-row-v { display: flex; align-items: flex-start; gap: 6px; border-radius: 13px; }
-    .sub-row-v.playing { animation: pulse-v 1.3s ease-in-out infinite; }
-    @keyframes pulse-v { 0%,100% { box-shadow: none; } 50% { box-shadow: 0 0 0 4px rgba(129,140,248,.22); } }
-    .sub-btn-v {
-      flex: 1; padding: 11px 13px; border-radius: 13px;
-      border: 2px solid transparent; background: var(--v-blue);
-      color: var(--v-dark); text-align: left; cursor: pointer; transition: .13s;
-      line-height: 1.5; word-break: break-word;
-    }
-    .sub-row-v.selected .sub-btn-v { border-color: var(--v-blue-mid); }
-    .sub-btn-v:active { background: #a5b4fc; }
-    .sub-btn-v.learned { background: var(--v-green); }
-    .eng-v { display: block; font-size: 15px; color: var(--v-dark); }
-    .sub-btn-v.learned .eng-v { color: var(--v-green-dark); text-decoration: line-through; }
-    .kor-wrap-v { overflow: hidden; max-height: 0; transition: max-height .25s ease, margin-top .2s; }
-    .kor-wrap-v.open { max-height: 60px; margin-top: 5px; }
-    .kor-v { display: block; font-size: 12px; color: var(--v-gray); font-style: italic; padding-top: 4px; border-top: 1px solid #c7d2fe; }
-    .sub-btn-v.learned .kor-v { color: #34d399; border-top-color: #6ee7b7; }
-    .sub-acts-v { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
-    .act-v { width: 36px; height: 36px; font-size: 17px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; border-radius: 9px; transition: .12s; }
-    .act-v:hover { background: #e2e8f0; }
-    .act-v.checked { color: #22c55e; }
-    .act-v.hide-on { background: #e2e8f0; color: #475569; }
-
-    @media (max-width: 520px) { #vert-root { max-width: 100vw; } }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speaking Gym – ㅇ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:#1e2d4a;--blue:#3b82f6;--blue-light:#dbeafe;--blue-soft:#eff6ff;
+  --beige:#f5f0ea;--beige-mid:#e8e0d4;
+  --green:#10b981;--green-light:#d1fae5;--green-dark:#065f46;
+  --orange:#f97316;--orange-light:#ffedd5;
+  --g100:#f1f5f9;--g200:#e2e8f0;--g400:#94a3b8;--g600:#475569;
+  --card:#fff;--bg:#f7f8fa;--fs:15px;--hfs:19px;
+}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--navy);}
+.hdr{background:var(--navy);color:#fff;padding:9px 16px;display:flex;align-items:center;justify-content:space-between;}
+.hdr-l{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--blue);}
+.hdr-r{font-size:11px;opacity:.4;}
+.tabs{display:flex;background:var(--g100);border-radius:9px;padding:3px;gap:3px;width:100%;}
+.tab{flex:1;padding:6px 0;border:none;background:transparent;border-radius:7px;font-size:13px;font-weight:500;color:var(--g600);cursor:pointer;transition:.13s;}
+.tab.on{background:var(--card);color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center;width:100%;}
+.btn{display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;transition:.13s;white-space:nowrap;}
+.btn.mode{background:var(--orange-light);color:var(--orange);}
+.btn.mode.on{background:var(--orange);color:#fff;}
+.btn.tr{background:var(--green-light);color:var(--green-dark);}
+.btn.tr.on{background:var(--green-dark);color:#fff;}
+.btn.lay{background:var(--navy);color:#fff;margin-left:auto;}
+.btn.view{background:var(--g100);color:var(--g600);border:1px solid var(--g200);}
+.btn.view.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+.btn.fnt{background:var(--blue-light);color:var(--blue);}
+.fpwrap{position:relative;}
+.fpop{display:none;position:absolute;bottom:calc(100% + 8px);left:0;background:var(--card);border:1px solid var(--g200);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:10px;gap:7px;z-index:500;white-space:nowrap;flex-direction:column;}
+.fpop.open{display:flex;}
+.fplbl{font-size:11px;color:var(--g400);font-weight:600;letter-spacing:.05em;}
+.fprow{display:flex;gap:6px;}
+.fpo{padding:6px 12px;border-radius:7px;border:1.5px solid var(--g200);background:var(--g100);font-weight:600;cursor:pointer;transition:.12s;color:var(--navy);font-size:13px;}
+.fpo:hover{border-color:var(--blue);color:var(--blue);}
+.fpo.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+.prog-wrap{display:flex;align-items:center;gap:10px;width:100%;}
+.prog-circle{position:relative;width:46px;height:46px;flex-shrink:0;}
+.prog-circle svg{transform:rotate(-90deg);}
+.pbg{fill:none;stroke:var(--g200);stroke-width:4;}
+.pfg{fill:none;stroke:var(--blue);stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .5s;}
+.pnum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--blue);}
+.prog-info{flex:1;}
+.prog-lbl{font-size:11px;color:var(--g400);}
+.prog-cnt{font-size:12px;font-weight:600;color:var(--navy);margin-top:1px;}
+.prog-bar{height:4px;background:var(--g200);border-radius:99px;overflow:hidden;margin-top:4px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),#818cf8);border-radius:99px;transition:width .5s;}
+#vert{display:block;}
+#vert.off{display:none;}
+.vert-top{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--card);box-shadow:0 2px 10px rgba(0,0,0,.08);border-radius:0 0 18px 18px;}
+.vert-top iframe{width:100%;height:200px;border:none;display:block;}
+.vert-ctrl{padding:10px 12px 14px;display:flex;flex-direction:column;gap:8px;}
+.sub-list{padding:8px 10px 30px;display:flex;flex-direction:column;gap:7px;}
+.sc{background:var(--card);border-radius:13px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;}
+.sc.playing{animation:cpulse 1.4s ease-in-out infinite;}
+@keyframes cpulse{0%,100%{box-shadow:0 0 0 2.5px var(--blue),0 4px 14px rgba(59,130,246,.15);}50%{box-shadow:0 0 0 4px var(--blue),0 6px 18px rgba(59,130,246,.3);}}
+.sc.sel .spa{outline:2px solid var(--blue);outline-offset:1px;}
+.sc.done{background:#f0fdf4;}
+.sc-in{display:flex;align-items:stretch;}
+.spa{flex:1;padding:11px 13px;cursor:pointer;text-align:left;background:transparent;border:none;line-height:1.45;word-break:break-word;}
+.eng{display:block;font-size:var(--fs);font-weight:500;color:var(--navy);}
+.sc.done .eng{color:var(--green-dark);text-decoration:line-through;}
+.kwrap{overflow:hidden;max-height:0;transition:max-height .25s,margin-top .2s;}
+.kwrap.open{max-height:60px;margin-top:5px;}
+.kt{font-size:calc(var(--fs) - 3px);color:var(--g600);font-style:italic;display:block;padding-top:5px;border-top:1px solid var(--blue-light);}
+.sc.done .kt{color:var(--green);border-top-color:#bbf7d0;}
+.sacts{display:flex;flex-direction:column;border-left:1px solid var(--g100);flex-shrink:0;}
+.sa{flex:1;width:42px;border:none;background:transparent;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .12s;}
+.sa:hover{background:var(--g100);}
+.sa.chk{color:var(--green);}
+.sa.hid{background:var(--g100);}
+.sa:first-child{border-bottom:1px solid var(--g100);}
+#horiz{display:none;}
+#horiz.on{display:flex;flex-direction:row;height:calc(100vh - 38px);}
+.h-left{width:40%;min-width:300px;max-width:480px;flex-shrink:0;background:var(--beige);border-right:1px solid var(--beige-mid);display:flex;flex-direction:column;overflow:hidden;}
+.h-title{padding:14px 18px 12px;background:var(--card);border-bottom:1px solid var(--beige-mid);flex-shrink:0;}
+.h-eye{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin-bottom:4px;}
+.h-main{font-size:19px;font-weight:800;color:var(--navy);line-height:1.2;}
+.h-sub{font-size:12px;color:var(--g400);margin-top:3px;}
+.h-vid{flex:1;min-height:0;display:flex;align-items:center;padding:14px 16px;}
+.h-vid iframe{width:100%;aspect-ratio:16/9;border:none;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.12);}
+.h-now{margin:0 16px;background:var(--card);border:1.5px solid var(--blue-light);border-radius:12px;padding:12px 14px;flex-shrink:0;}
+.h-now-lbl{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);}
+.h-now-txt{font-size:17px;font-weight:700;color:var(--navy);line-height:1.3;margin-top:4px;}
+.h-now-txt.idle{color:var(--g400);font-size:13px;font-style:italic;font-weight:400;}
+.h-now-kor{font-size:13px;color:var(--g400);font-style:italic;margin-top:3px;}
+.h-ctrl{flex-shrink:0;padding:12px 16px 14px;background:var(--card);border-top:1px solid var(--beige-mid);display:flex;flex-direction:column;gap:8px;}
+.h-prog{display:flex;align-items:center;gap:10px;}
+.h-prog-bg{flex:1;height:5px;background:var(--g200);border-radius:99px;overflow:hidden;}
+.h-prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),#818cf8);border-radius:99px;transition:width .5s;}
+.h-prog-txt{font-size:12px;color:var(--g400);white-space:nowrap;}
+.h-btns{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+.hb{display:flex;align-items:center;gap:5px;padding:8px 14px;border-radius:9px;border:none;font-size:12px;font-weight:600;cursor:pointer;transition:.13s;white-space:nowrap;}
+.hb.mode{background:var(--orange-light);color:var(--orange);}
+.hb.mode.on{background:var(--orange);color:#fff;}
+.hb.tr{background:var(--green-light);color:var(--green-dark);}
+.hb.tr.on{background:var(--green-dark);color:#fff;}
+.hb.view{background:var(--g100);color:var(--g600);border:1px solid var(--g200);}
+.hb.view.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+.hb.lay{background:var(--navy);color:#fff;margin-left:auto;}
+.hb.fnt{background:var(--blue-light);color:var(--blue);}
+.h-right{flex:1;min-width:0;padding:10px 12px 24px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;}
+.hrow{display:flex;align-items:center;gap:7px;border-radius:13px;}
+.hrow.playing{animation:cpulse 1.4s ease-in-out infinite;}
+.hrow.sel .hsb{outline:2.5px solid var(--blue);outline-offset:1px;}
+.hsb{flex:1;min-width:0;padding:12px 15px;border-radius:13px;border:none;background:var(--card);text-align:left;cursor:pointer;transition:background .13s;line-height:1.45;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.hsb:hover{background:var(--blue-soft);}
+.hsb.done{background:#f0fdf4;}
+.h-eng{display:block;font-size:var(--hfs);font-weight:600;color:var(--navy);}
+.hsb.done .h-eng{color:var(--green-dark);text-decoration:line-through;}
+.hkwrap{overflow:hidden;max-height:0;transition:max-height .25s,margin-top .2s;}
+.hkwrap.open{max-height:60px;margin-top:5px;}
+.hkt{font-size:calc(var(--hfs) - 5px);color:var(--g400);font-style:italic;display:block;padding-top:5px;border-top:1px solid var(--blue-light);}
+.hsb.done .hkt{color:var(--green);border-top-color:#bbf7d0;}
+.hacts{display:flex;flex-direction:column;gap:5px;flex-shrink:0;}
+.ha{width:42px;height:42px;border:1px solid var(--g200);background:var(--card);border-radius:9px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:.12s;}
+.ha:hover{background:var(--blue-soft);}
+.ha.chk{color:var(--green);}
+.ha.hid{background:var(--g100);}
+</style>
 </head>
 <body>
-
-<!-- HORIZONTAL (TEACHER) -->
-<div id="horiz-root" class="hidden">
+<div class="hdr">
+  <div class="hdr-l"><div class="hdot"></div>Speaking Gym <span style="opacity:.45;font-weight:400;font-size:12px">with Noah</span></div>
+  <div class="hdr-r">ㅇ · ㅇ</div>
+</div>
+<div id="vert">
+  <div class="vert-top">
+    <iframe id="pv" src="https://www.youtube.com/embed/-jpCbhzq7sE?enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    <div class="vert-ctrl">
+      <div class="prog-wrap">
+        <div class="prog-circle">
+          <svg width="46" height="46" viewBox="0 0 46 46">
+            <circle class="pbg" cx="23" cy="23" r="19"/>
+            <circle class="pfg" id="pfg" cx="23" cy="23" r="19" stroke-dasharray="119.38" stroke-dashoffset="119.38"/>
+          </svg>
+          <div class="pnum" id="ppct">0%</div>
+        </div>
+        <div class="prog-info">
+          <div class="prog-lbl">학습 진행률</div>
+          <div class="prog-cnt" id="pcnt">0 / 45 문장</div>
+          <div class="prog-bar"><div class="prog-fill" id="pbar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="btns">
+        <button class="btn mode" id="v-mode">▶ 한줄</button>
+        <button class="btn tr" id="v-tr">번역</button>
+        <div class="fpwrap">
+          <button class="btn fnt" id="v-fnt">가 글자</button>
+          <div class="fpop" id="fpop">
+            <div class="fplbl">글자 크기</div>
+            <div class="fprow">
+              <button class="fpo" data-s="13">작게</button>
+              <button class="fpo on" data-s="15">보통</button>
+              <button class="fpo" data-s="18">크게</button>
+              <button class="fpo" data-s="21">아주 크게</button>
+            </div>
+          </div>
+        </div>
+        <button class="btn" id="v-hide" onclick="toggleHideAll()">🙈 자막가리기</button>
+        <button class="btn lay" id="v-lay">가로</button>
+      </div>
+    </div>
+  </div>
+  <div class="sub-list" id="sv"></div>
+</div>
+<div id="horiz">
   <div class="h-left">
-    <div class="h-top-bar">
-      <div>
-        <div class="brand">🏋️ Speaking Gym</div>
-        <div class="brand-sub">with Noah · Convenience Store Drinks</div>
-      </div>
-      <button class="layout-toggle" id="h-layout-btn">📱 세로모드</button>
+    <div class="h-title">
+      <div class="h-eye">Speaking Gym with Noah</div>
+      <div class="h-main">ㅇ</div>
+      <div class="h-sub">ㅇ</div>
     </div>
-    <div class="h-video-wrap">
-      <div class="h-video-inner">
-        <iframe id="player-h" src="https://www.youtube.com/embed/hZzckey5frk?enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-      </div>
-      <div class="h-stats">
-        <div class="h-stat"><div class="h-stat-num" id="h-total-num">63</div><div class="h-stat-label">Total</div></div>
-        <div class="h-stat"><div class="h-stat-num" id="h-learned-num" style="color:var(--green)">0</div><div class="h-stat-label">Learned</div></div>
-        <div class="h-stat"><div class="h-stat-num" id="h-pct" style="color:var(--orange)">0%</div><div class="h-stat-label">Progress</div></div>
-      </div>
+    <div class="h-vid">
+      <iframe id="ph" src="https://www.youtube.com/embed/-jpCbhzq7sE?enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+
+    <div class="h-ctrl">
       <div class="h-prog">
-        <div class="h-prog-row"><span>학습 진행률</span><span id="h-prog-text">0 / 63</span></div>
-        <div class="h-prog-bar"><div class="h-prog-fill" id="h-prog-fill" style="width:0%"></div></div>
+        <div class="h-prog-bg"><div class="h-prog-fill" id="hpbar" style="width:0%"></div></div>
+        <div class="h-prog-txt" id="hptxt">0%</div>
       </div>
-    </div>
-    <div class="h-controls">
-      <div class="h-tabs">
-        <button class="h-tab active" id="h-show-all">전체 보기</button>
-        <button class="h-tab" id="h-show-learned">✔ 외웠음만</button>
-      </div>
-      <div class="h-btn-row">
-        <button class="h-btn mode" id="h-mode-btn">▶ 한줄 재생</button>
-        <button class="h-btn trans" id="h-trans-btn">🇰🇷 번역 보기</button>
+      <div class="h-btns">
+        <button class="hb mode" id="h-mode">▶ 한줄</button>
+        <button class="hb tr" id="h-tr">번역</button>
+        <div class="fpwrap">
+          <button class="hb fnt" id="h-fnt">가 글자</button>
+          <div class="fpop" id="h-fpop">
+            <div class="fplbl">글자 크기</div>
+            <div class="fprow">
+              <button class="h-fpo fpo" data-s="15">작게</button>
+              <button class="h-fpo fpo on" data-s="19">보통</button>
+              <button class="h-fpo fpo" data-s="23">크게</button>
+              <button class="h-fpo fpo" data-s="27">아주 크게</button>
+            </div>
+          </div>
+        </div>
+        <button class="hb" id="h-hide" onclick="toggleHideAll()">🙈 자막가리기</button>
+        <button class="hb lay" id="h-lay">세로</button>
       </div>
     </div>
   </div>
-  <div class="h-right">
-    <div class="h-subs-header">자막 목록 — 클릭해서 재생</div>
-    <div id="subs-h"></div>
-  </div>
+  <div class="h-right" id="sh"></div>
 </div>
-
-<!-- VERTICAL (STUDENT) -->
-<div id="vert-root">
-  <div class="v-header">
-    <div class="v-brand">🏋️ Speaking Gym <span>with Noah</span></div>
-    <button class="v-layout-btn" id="v-layout-btn">🖥 가로모드</button>
-  </div>
-  <div class="v-sticky">
-    <iframe id="player-vert" src="https://www.youtube.com/embed/hZzckey5frk?enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    <div class="v-prog-area">
-      <div class="v-ring-wrap">
-        <svg width="44" height="44" viewBox="0 0 44 44">
-          <circle class="v-ring-bg" cx="22" cy="22" r="18"/>
-          <circle class="v-ring-fill" id="v-ring" cx="22" cy="22" r="18" stroke-dasharray="113.1" stroke-dashoffset="113.1"/>
-        </svg>
-        <div class="v-ring-text" id="v-ring-text">0%</div>
-      </div>
-      <div class="v-prog-labels">
-        <div class="v-prog-title">Convenience Store Drinks</div>
-        <div class="v-prog-sub" id="v-prog-sub">0 / 63 문장 완료</div>
-      </div>
-    </div>
-    <div class="v-controls">
-      <div class="v-tabs">
-        <button class="v-tab active" id="v-show-all">전체 보기</button>
-        <button class="v-tab" id="v-show-learned">✔ 외웠음만</button>
-      </div>
-      <div class="v-btn-row">
-        <button class="v-btn mode" id="v-mode-btn">▶ 한줄 재생</button>
-        <button class="v-btn trans" id="v-trans-btn">🇰🇷 번역 보기</button>
-      </div>
-    </div>
-  </div>
-  <div id="subs-v"></div>
-</div>
-
 <script>
-const SUBS=[{start:16.716,end:20.72,text:"Good morning, Doobies Welcome to Convee Convo",kor:"안녕하세요 여러분, Convee Convo에 오신 걸 환영해요"},{start:20.72,end:23.39,text:"where we mix a little bit of everything",kor:"이것저것 다양한 걸 섞는 곳이죠"},{start:23.39,end:26.726,text:"Today's guest, he is the master of brunch talk",kor:"오늘의 게스트는 브런치 토크의 대가예요"},{start:26.726,end:28.495,text:"The master of aesthetics",kor:"미적 감각의 장인이죠"},{start:28.528,end:32.065,text:"Please welcome Nigel, aka SimplyNi",kor:"Nigel, 일명 SimplyNi를 환영해 주세요"},{start:54.954,end:56.384,text:"I'm going to pretend that camera is your mom",kor:"저 카메라가 네 엄마라고 생각할게"},{start:56.395,end:57.223,text:"Is she here by the way?",kor:"근데 엄마 여기 계세요?"},{start:60.46,end:61.461,text:"My mom is gorgeous",kor:"우리 엄마 너무 예뻐요"},{start:61.461,end:62.429,text:"She's stunning",kor:"정말 눈부시게 아름다우세요"},{start:62.429,end:63.797,text:"She's going to be very happy",kor:"엄마가 엄청 좋아하실 거예요"},{start:63.797,end:64.798,text:"The queen",kor:"여왕님이죠"},{start:64.798,end:66.299,text:"I hope she's having a great day",kor:"오늘 하루도 좋은 하루 보내고 계시길"},{start:66.299,end:69.269,text:"She's having the most great morning",kor:"최고의 아침을 보내고 계실 거예요"},{start:69.269,end:69.869,text:"Mommy, sorry",kor:"엄마, 미안해요"},{start:71.304,end:72.972,text:"I'm dying",kor:"나 죽겠다 (너무 웃겨)"},{start:72.972,end:74.219,text:"My mom loves your videos",kor:"우리 엄마가 당신 영상을 너무 좋아해요"},{start:74.23,end:74.741,text:"Does she?",kor:"그래요?"},{start:74.741,end:76.809,text:"Yeah, I show her all the time",kor:"네, 항상 보여드려요"},{start:76.82,end:77.444,text:"Sorry",kor:"죄송해요"},{start:78.978,end:82.148,text:"I actually get more people asking about my mom than",kor:"사실 나보다 엄마에 대해 물어보는 사람이 더 많아요"},{start:82.148,end:84.717,text:"maybe like oh like I want to see your mom's toes",kor:"엄마 발가락 보고 싶다는 사람도 있고요"},{start:86.519,end:87.854,text:"She is fine",kor:"엄마 진짜 매력 있으세요"},{start:87.854,end:89.255,text:"She's really aged well",kor:"나이를 정말 잘 드셨어요"},{start:89.255,end:91.283,text:"Remember when the internet was obsessed with your feet?",kor:"인터넷이 당신 발에 집착했던 거 기억해요?"},{start:91.294,end:92.692,text:"We need to talk about that at one point",kor:"그건 언젠가 꼭 얘기해야 해요"},{start:92.692,end:94.16,text:"That's a whole other conversation",kor:"그건 완전히 다른 주제예요"},{start:94.16,end:96.329,text:"You want to see my socks today?",kor:"오늘 제 양말 보고 싶어요?"},{start:96.329,end:97.53,text:"Actually, are they dirty?",kor:"근데 혹시 더럽지 않나요?"},{start:97.53,end:98.998,text:"They're a little dirty and sweaty",kor:"좀 더럽고 땀에 젖었어요"},{start:98.998,end:100.733,text:"But I'm wearing tabi socks today",kor:"그래도 오늘 타비 양말 신었어요"},{start:100.733,end:102.001,text:"Oh my God",kor:"세상에"},{start:102.001,end:103.503,text:"That's so funny",kor:"너무 웃겨요"},{start:103.503,end:104.37,text:"I love them",kor:"완전 마음에 들어요"},{start:104.37,end:106.84,text:"Honestly, it's like you can grab things",kor:"솔직히 발가락으로 물건을 잡을 수 있을 것 같잖아요"},{start:106.84,end:108.007,text:"Okay, I'm not going to do that",kor:"아, 그러진 않을게요"},{start:108.007,end:109.909,text:"This is a whole different genre",kor:"이건 완전히 다른 장르네요"},{start:109.909,end:112.846,text:"Okay, we got to keep this PG",kor:"자, 수위 조절해야겠어요"},{start:118.518,end:120.92,text:"Good morning",kor:"좋은 아침이에요"},{start:123.59,end:125.558,text:"Getting a brunch club",kor:"브런치 클럽 시작이에요"},{start:125.558,end:126.359,text:"Okay",kor:"자"},{start:126.359,end:128.928,text:"So since you say 'Good Morning' in your videos",kor:"영상에서 항상 '굿모닝'이라고 하시니까"},{start:128.928,end:130.93,text:"we are going to be serving you",kor:"이걸 드려볼게요"},{start:130.93,end:132.365,text:"this drink over here",kor:"바로 이 음료인데요"},{start:132.365,end:134.734,text:"which is called 'Achim Haetsal'",kor:"'아침 햇살'이라는 음료예요"},{start:134.734,end:137.203,text:"and it just translates to 'Morning Sunshine'",kor:"딱 'Morning Sunshine'이라는 뜻이에요"},{start:137.203,end:138.338,text:"Oh really, amazing",kor:"오 정말요, 대박이다"},{start:138.338,end:142.408,text:"It's made from like washed rice and a bunch of different grain mixtures",kor:"씻은 쌀이랑 여러 가지 곡물을 섞어서 만든 거예요"},{start:142.408,end:143.877,text:"It's like cozy",kor:"뭔가 아늑한 느낌이에요"},{start:143.877,end:145.979,text:"Has that really nice malty flavor",kor:"구수한 맥아 맛이 정말 좋아요"},{start:145.979,end:147.814,text:"- You want to give it a try? Just as is? - Absolutely",kor:"- 한번 드셔볼래요? 그냥 그대로요? - 물론이죠"},{start:176.176,end:178.958,text:"You can taste kind of the really subtleness",kor:"정말 은은한 맛이 느껴지죠"},{start:178.969,end:183.249,text:"and how the flavors are melting in your mouth, you know?",kor:"풍미가 입 안에서 녹아드는 느낌 있잖아요?"},{start:184.284,end:188.021,text:"Also I'll keep doing this and I hope you don't find it weird",kor:"그리고 저 이렇게 계속 할 건데 이상하게 보지 않으셨으면 해요"},{start:188.021,end:192.158,text:"You know, our nose has more of a flavor profile than our tongue",kor:"사실 혀보다 코가 맛을 더 많이 느끼거든요"},{start:192.158,end:194.227,text:"So I tend to always smell things",kor:"그래서 저는 항상 냄새를 맡는 편이에요"},{start:194.227,end:195.962,text:"I smell everything too",kor:"저도 뭐든 냄새 맡아요"},{start:196.729,end:199.465,text:"Kevin always teases me but even when I'm like...",kor:"Kevin이 항상 놀리는데 저도 이럴 때가 있어요..."},{start:200.2,end:201.868,text:"I don't know if I should say this",kor:"이걸 말해도 될지 모르겠는데"},{start:201.868,end:203.703,text:"I'm like, on the edge of my seat",kor:"저 지금 엄청 기대되는데요"},{start:203.703,end:205.171,text:"Yeah, I know like after I...",kor:"맞아요, 저도 있어요..."},{start:205.171,end:206.339,text:"Okay, I'm sure",kor:"맞아요, 확실해요"},{start:206.339,end:208.074,text:"I'm not singular in this.",kor:"저만 그런 건 아닐 거예요"},{start:208.074,end:209.642,text:"After I pop a pimple",kor:"여드름을 짜고 나면"},{start:209.642,end:212.679,text:"I cannot resist not smelling it",kor:"냄새 안 맡을 수가 없어요"},{start:212.679,end:214.514,text:"I'm ashamed to say I do it too",kor:"부끄럽지만 저도 그래요"}];
-
-const STORAGE_KEY='sg_convenience_v3';
-let status={},showKorean=false,openKorIdxs=new Set(),layoutMode='vertical';
-let playingSubIdx=null,pausedSubIdx=null,paused=false,playMode='single';
-let timeoutId=null,playerH=null,playerVert=null,currentView='all',selectedSubIdx=null;
-
-function loadStatus(){
-  try{const s=JSON.parse(localStorage.getItem(STORAGE_KEY))||{};status=s.status||{};for(let i=0;i<SUBS.length;i++)if(!status[i])status[i]={hide:false,learned:false};}
-  catch{status={};}
-}
-function saveStatus(){localStorage.setItem(STORAGE_KEY,JSON.stringify({status}));}
-
-function countLearned(){return Object.values(status).filter(s=>s.learned).length;}
-function updateStats(){
-  const learned=countLearned(),total=SUBS.length,pct=total?Math.round(learned/total*100):0;
-  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-  const setW=(id,v)=>{const el=document.getElementById(id);if(el)el.style.width=v;};
-  set('h-learned-num',learned);set('h-pct',pct+'%');setW('h-prog-fill',pct+'%');set('h-prog-text',learned+' / '+total);
-  const circ=2*Math.PI*18;
-  const ring=document.getElementById('v-ring');
-  if(ring)ring.style.strokeDashoffset=circ*(1-pct/100);
-  set('v-ring-text',pct+'%');set('v-prog-sub',learned+' / '+total+' 문장 완료');
-}
-
-function renderSubs(view='all',mode='vertical'){
-  const isH=mode==='horizontal';
-  const subsDiv=document.getElementById(isH?'subs-h':'subs-v');
-  subsDiv.innerHTML='';
-  SUBS.forEach((sub,idx)=>{
-    if(view==='learned'&&!status[idx].learned)return;
-    const row=document.createElement('div');
-    row.className=(isH?'sub-row-h':'sub-row-v')+(idx===selectedSubIdx?' selected':'')+(idx===playingSubIdx?' playing':'');
-    row.dataset.idx=idx;
-    const btn=document.createElement('button');
-    btn.className=(isH?'sub-btn-h':'sub-btn-v')+(status[idx].learned?' learned':'');
-    const eng=document.createElement('span');
-    eng.className=isH?'eng-h':'eng-v';
-    eng.textContent=status[idx].hide?'🙈':sub.text;
-    btn.appendChild(eng);
-    const kw=document.createElement('span');
-    kw.className=(isH?'kor-wrap-h':'kor-wrap-v')+(openKorIdxs.has(idx)?' open':'');
-    const ks=document.createElement('span');
-    ks.className=isH?'kor-h':'kor-v';
-    if(showKorean)ks.textContent=sub.kor||'';
-    kw.appendChild(ks);btn.appendChild(kw);
-    btn.onclick=()=>{
-      if(showKorean&&!status[idx].hide){if(openKorIdxs.has(idx))openKorIdxs.delete(idx);else openKorIdxs.add(idx);}
-      playPauseOrRestartSub(idx,mode);
-    };
-    const acts=document.createElement('div');
-    acts.className=isH?'sub-acts-h':'sub-acts-v';
-    const hb=document.createElement('button');
-    hb.className=(isH?'act-h':'act-v')+(status[idx].hide?' hide-on':'');
-    hb.textContent='🙈';
-    hb.onclick=e=>{e.stopPropagation();status[idx].hide=!status[idx].hide;saveStatus();renderSubs(currentView,mode);updateStats();};
-    const cb=document.createElement('button');
-    cb.className=(isH?'act-h':'act-v')+(status[idx].learned?' checked':'');
-    cb.textContent='✔️';
-    cb.onclick=e=>{e.stopPropagation();status[idx].learned=!status[idx].learned;saveStatus();renderSubs(currentView,mode);updateStats();};
-    acts.appendChild(hb);acts.appendChild(cb);row.appendChild(btn);row.appendChild(acts);subsDiv.appendChild(row);
-  });
-  updateStats();
-}
-
-function scrollToSub(idx,mode){
-  const d=document.getElementById(mode==='horizontal'?'subs-h':'subs-v');
-  for(const r of d.querySelectorAll('[data-idx]')){
-    if(parseInt(r.dataset.idx)===idx){r.scrollIntoView({behavior:'smooth',block:'center'});break;}
+const SUBS=[
+  {
+    "start": 52.781,
+    "end": 53.614,
+    "text": "Damn!",
+    "kor": "와!"
+  },
+  {
+    "start": 53.722,
+    "end": 54.555,
+    "text": "Alright.",
+    "kor": "좋아."
+  },
+  {
+    "start": 54.555,
+    "end": 55.086,
+    "text": "Okay.",
+    "kor": "오케이."
+  },
+  {
+    "start": 55.087,
+    "end": 55.475,
+    "text": "Alright.",
+    "kor": "알겠어."
+  },
+  {
+    "start": 55.476,
+    "end": 57.054,
+    "text": "Dude, this place is legit.",
+    "kor": "야, 이 집 진짜 괜찮다."
+  },
+  {
+    "start": 57.054,
+    "end": 58.332,
+    "text": "Fully furnished?",
+    "kor": "가구 다 있어?"
+  },
+  {
+    "start": 58.333,
+    "end": 59.372,
+    "text": "Yes!",
+    "kor": "응!"
+  },
+  {
+    "start": 59.422,
+    "end": 60.589,
+    "text": "Woahhh, bro.",
+    "kor": "와, 야."
+  },
+  {
+    "start": 60.719,
+    "end": 61.34,
+    "text": "What?",
+    "kor": "왜?"
+  },
+  {
+    "start": 61.341,
+    "end": 62.61,
+    "text": "Why do you have your shoes on?",
+    "kor": "왜 신발 신고 있어?"
+  },
+  {
+    "start": 62.729,
+    "end": 64.687,
+    "text": "What? What should I have on?",
+    "kor": "뭐? 뭘 신어야 하는데?"
+  },
+  {
+    "start": 64.688,
+    "end": 67.084,
+    "text": "Well, your feet or socks.",
+    "kor": "발이나 양말이지."
+  },
+  {
+    "start": 67.609,
+    "end": 69.829,
+    "text": "Th-then my feet or socks will get dirty.",
+    "kor": "그, 그럼 발이나 양말이 더러워지잖아."
+  },
+  {
+    "start": 69.83,
+    "end": 72.242,
+    "text": "Well, that's why you don't wear it in the first place.",
+    "kor": "그래서 애초에 신발을 신고 들어오지 않는 거야."
+  },
+  {
+    "start": 72.243,
+    "end": 73.974,
+    "text": "So the floor won't get dirty.",
+    "kor": "바닥이 더러워지지 않게."
+  },
+  {
+    "start": 73.974,
+    "end": 76.056,
+    "text": "I see. This is one of those which came first,",
+    "kor": "알겠어. 이건 뭐가 먼저냐 같은 거잖아,"
+  },
+  {
+    "start": 76.057,
+    "end": 77.942,
+    "text": "the chicken or the egg scenarios.",
+    "kor": "닭이 먼저냐 달걀이 먼저냐 같은 상황."
+  },
+  {
+    "start": 77.942,
+    "end": 79.619,
+    "text": "No. Doesn't matter what came first.",
+    "kor": "아니. 뭐가 먼저인지는 상관없어."
+  },
+  {
+    "start": 79.62,
+    "end": 81.123,
+    "text": "They both had their shoes off.",
+    "kor": "둘 다 신발을 벗었어."
+  },
+  {
+    "start": 81.123,
+    "end": 83.873,
+    "text": "Dude, these are clean, alright?",
+    "kor": "야, 이거 깨끗해, 알겠어?"
+  },
+  {
+    "start": 84.617,
+    "end": 85.937,
+    "text": "Let me just refresh your memory.",
+    "kor": "기억을 좀 되살려줄게."
+  },
+  {
+    "start": 86.159,
+    "end": 89.058,
+    "text": "Upon leaving the coffee shop, you stepped on a puddle.",
+    "kor": "커피숍 나오자마자 웅덩이 밟았잖아."
+  },
+  {
+    "start": 89.058,
+    "end": 91.282,
+    "text": "I noticed there was a dog near by,",
+    "kor": "근처에 개가 있었는데,"
+  },
+  {
+    "start": 91.283,
+    "end": 93.681,
+    "text": "a really good chance that the liquid was from the dog.",
+    "kor": "그 액체가 개 거일 가능성이 엄청 높아."
+  },
+  {
+    "start": 93.682,
+    "end": 95.061,
+    "text": "When we were crossing the street,",
+    "kor": "길 건널 때는,"
+  },
+  {
+    "start": 95.062,
+    "end": 96.678,
+    "text": "you stepped on a dead squirrel and",
+    "kor": "죽은 다람쥐 밟고,"
+  },
+  {
+    "start": 96.678,
+    "end": 100.24,
+    "text": "a half eaten BLT, and questionable slime,",
+    "kor": "반쯤 먹다 버린 BLT 샌드위치랑 의심스러운 끈적한 것도 밟았잖아,"
+  },
+  {
+    "start": 100.241,
+    "end": 102.047,
+    "text": "as we were walking by the barn.",
+    "kor": "헛간 옆 지나갈 때."
+  },
+  {
+    "start": 102.047,
+    "end": 104.796,
+    "text": "Now imagine bringing all that into this house.",
+    "kor": "이제 그걸 다 집 안으로 가져오는 걸 상상해봐."
+  },
+  {
+    "start": 104.796,
+    "end": 105.629,
+    "text": "We can't have,",
+    "kor": "그럴 순 없어,"
+  },
+  {
+    "start": 105.629,
+    "end": 108.186,
+    "text": "I know you went to a public restroom with that shoes on.",
+    "kor": "공중 화장실도 그 신발 신고 갔던 거 알아."
+  },
+  {
+    "start": 108.194,
+    "end": 109.292,
+    "text": "That is disgusting.",
+    "kor": "그건 진짜 역겨워."
+  },
+  {
+    "start": 109.292,
+    "end": 112.815,
+    "text": "I've lived my entire life wearing shoes indoors.",
+    "kor": "나 평생 실내에서 신발 신고 살았어."
+  },
+  {
+    "start": 112.816,
+    "end": 114.089,
+    "text": "Nothing bad has ever happened to me.",
+    "kor": "나한테 나쁜 일은 한 번도 없었어."
+  },
+  {
+    "start": 114.09,
+    "end": 116.308,
+    "text": "No squirrel virus.",
+    "kor": "다람쥐 바이러스 같은 거 없었다고."
+  },
+  {
+    "start": 116.309,
+    "end": 118.124,
+    "text": "I feel naked without them.",
+    "kor": "신발 없으면 벌거벗은 느낌이야."
+  },
+  {
+    "start": 118.124,
+    "end": 119.186,
+    "text": "It'd be like not wearing underwear.",
+    "kor": "속옷 안 입는 것 같은 거야."
+  },
+  {
+    "start": 119.186,
+    "end": 121.905,
+    "text": "Plus, I made really good use of the floor mat outside.",
+    "kor": "게다가 밖에 있는 현관 매트도 잘 활용했잖아."
+  },
+  {
+    "start": 121.906,
+    "end": 123.679,
+    "text": "We're gonna be fine, man.",
+    "kor": "괜찮을 거야, 야."
+  },
+  {
+    "start": 123.855,
+    "end": 127.272,
+    "text": "Come on, we're talking about shoes here.",
+    "kor": "왜 이래, 그냥 신발 얘기잖아."
+  },
+  {
+    "start": 146.404,
+    "end": 147.237,
+    "text": "Really?!",
+    "kor": "진짜?!"
+  },
+  {
+    "start": 151.372,
+    "end": 154.554,
+    "text": "In Korea, we clean the floors every single day.",
+    "kor": "한국에서는 매일 빠짐없이 바닥 청소를 해."
+  },
+  {
+    "start": 154.657,
+    "end": 157.329,
+    "text": "And, wash our feet before bed.",
+    "kor": "그리고 자기 전에 발도 씻고."
+  },
+  {
+    "start": 157.44,
+    "end": 158.273,
+    "text": "It's a thing.",
+    "kor": "그게 문화야."
+  },
+  {
+    "start": 158.273,
+    "end": 160.355,
+    "text": "So the whole country has OCD.",
+    "kor": "그럼 나라 전체가 강박증이 있는 거네."
   }
+];
+const KEY='sg_'+btoa('-jpCbhzq7sE').slice(0,8);
+let st={},showKor=false,openK=new Set();
+let playing=null,paused=false,pausedIdx=null,playMode='single',tid=null;
+let pv,ph,view='all',selIdx=null,fs=15,hfs=19,layout='vert';
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY))||{};st=s.st||{};fs=s.fs||15;hfs=s.hfs||19;for(let i=0;i<SUBS.length;i++)if(!st[i])st[i]={h:false,l:false};}catch{st={};}}
+function save(){localStorage.setItem(KEY,JSON.stringify({st,fs,hfs}));}
+function applyHfs(n){
+  hfs=n;document.documentElement.style.setProperty('--hfs',n+'px');
+  document.querySelectorAll('.h-fpo').forEach(b=>b.classList.toggle('on',+b.dataset.s===n));
+  save();
 }
-
-function toggleTranslate(mode){
-  showKorean=!showKorean;
-  if(!showKorean)openKorIdxs.clear();
-  const label=showKorean?'🇰🇷 번역 숨기기':'🇰🇷 번역 보기';
-  ['h-trans-btn','v-trans-btn'].forEach(id=>{const b=document.getElementById(id);if(!b)return;b.textContent=label;b.classList.toggle('active',showKorean);});
-  renderSubs(currentView,mode);
+function applyFs(n){fs=n;document.documentElement.style.setProperty('--fs',n+'px');document.querySelectorAll('.fpo').forEach(b=>b.classList.toggle('on',+b.dataset.s===n));save();}
+function toggleHideAll(){
+  const allHidden=Object.values(st).every(s=>s.h);
+  Object.keys(st).forEach(k=>st[k].h=!allHidden);
+  ['v-hide','h-hide'].forEach(id=>{
+    const btn=document.getElementById(id);
+    if(btn)btn.textContent=allHidden?'🙈 자막가리기':'👁 자막열기';
+  });
+  save();
+  if(view==='h')renderH();else renderV();
 }
-
-function getCurPlayer(mode){return mode==='horizontal'?playerH:playerVert;}
-function playPauseOrRestartSub(idx,mode){
-  selectedSubIdx=idx;
-  const cp=getCurPlayer(mode);
-  if(!cp?.seekTo){renderSubs(currentView,mode);return;}
-  const state=cp.getPlayerState();
-  if(playingSubIdx!==idx){startPlay(idx,mode);return;}
-  if(state===1){cp.pauseVideo();if(timeoutId)clearTimeout(timeoutId);paused=true;pausedSubIdx=idx;playingSubIdx=null;renderSubs(currentView,mode);return;}
-  if(state===2&&paused&&pausedSubIdx===idx){startPlay(idx,mode);return;}
-  startPlay(idx,mode);
+function prog(){const ld=Object.values(st).filter(s=>s.l).length,tot=SUBS.length;const p=tot?Math.round(ld/tot*100):0,c=2*Math.PI*19;const fg=document.getElementById('pfg');if(fg)fg.style.strokeDashoffset=c*(1-p/100);const g=id=>document.getElementById(id);if(g('ppct'))g('ppct').textContent=p+'%';if(g('pcnt'))g('pcnt').textContent=ld+' / '+tot+' 문장';if(g('pbar'))g('pbar').style.width=p+'%';if(g('hpbar'))g('hpbar').style.width=p+'%';if(g('hptxt'))g('hptxt').textContent=p+'% ('+ld+'/'+tot+')';}
+function nowPlaying(idx){const t=document.getElementById('h-txt'),k=document.getElementById('h-kor');if(!t)return;if(idx===null){t.textContent='자막을 클릭해서 시작하세요';t.classList.add('idle');if(k)k.style.display='none';return;}t.textContent=SUBS[idx].text;t.classList.remove('idle');if(k){if(showKor){k.textContent=SUBS[idx].kor;k.style.display='';}else k.style.display='none';}}
+function renderV(v){view=v||view;const div=document.getElementById('sv');div.innerHTML='';SUBS.forEach((sub,i)=>{if(view==='done'&&!st[i].l)return;const card=document.createElement('div');card.className='sc'+(i===playing?' playing':'')+(i===selIdx?' sel':'')+(st[i].l?' done':'');card.dataset.i=i;const inn=document.createElement('div');inn.className='sc-in';const pb=document.createElement('button');pb.className='spa';const es=document.createElement('span');es.className='eng';es.textContent=st[i].h?'🙈':sub.text;pb.appendChild(es);const kw=document.createElement('span');kw.className='kwrap'+(openK.has(i)?' open':'');const ks=document.createElement('span');ks.className='kt';if(showKor)ks.textContent=sub.kor;kw.appendChild(ks);pb.appendChild(kw);pb.onclick=()=>{if(showKor&&!st[i].h){openK.has(i)?openK.delete(i):openK.add(i);}doPlay(i,'v');};const acts=document.createElement('div');acts.className='sacts';const hb=document.createElement('button');hb.className='sa'+(st[i].h?' hid':'');hb.textContent='🙈';hb.onclick=e=>{e.stopPropagation();st[i].h=!st[i].h;save();renderV();};acts.appendChild(hb);inn.appendChild(pb);inn.appendChild(acts);card.appendChild(inn);div.appendChild(card);});prog();}
+function renderH(v){view=v||view;const div=document.getElementById('sh');div.innerHTML='';SUBS.forEach((sub,i)=>{if(view==='done'&&!st[i].l)return;const row=document.createElement('div');row.className='hrow'+(i===playing?' playing':'')+(i===selIdx?' sel':'');row.dataset.i=i;const btn=document.createElement('button');btn.className='hsb'+(st[i].l?' done':'');const eng=document.createElement('span');eng.className='h-eng';eng.textContent=st[i].h?'🙈':sub.text;btn.appendChild(eng);const kw=document.createElement('span');kw.className='hkwrap'+(openK.has(i)?' open':'');const ks=document.createElement('span');ks.className='hkt';if(showKor)ks.textContent=sub.kor;kw.appendChild(ks);btn.appendChild(kw);btn.onclick=()=>{if(showKor&&!st[i].h){openK.has(i)?openK.delete(i):openK.add(i);}doPlay(i,'h');};const acts=document.createElement('div');acts.className='hacts';const hb=document.createElement('button');hb.className='ha'+(st[i].h?' hid':'');hb.textContent='🙈';hb.onclick=e=>{e.stopPropagation();st[i].h=!st[i].h;save();renderH();};acts.appendChild(hb);row.appendChild(btn);row.appendChild(acts);div.appendChild(row);});prog();}
+function scrollTo(i,m){
+  const id=m==='v'?'sv':'sh';
+  const container=document.getElementById(id);
+  const row=container?.querySelector('[data-i="'+i+'"]');
+  if(!row)return;
+  if(m==='h'){row.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  // 학생 모드: sticky 헤더 높이 계산해서 두 번째 줄 위치에 오도록 스크롤
+  const top=document.querySelector('.vert-top');
+  const headerH=top?top.offsetHeight:0;
+  const rowTop=row.getBoundingClientRect().top+window.scrollY;
+  const offset=rowTop-headerH-8;
+  window.scrollTo({top:offset,behavior:'smooth'});
 }
-function startPlay(idx,mode){
-  playingSubIdx=idx;paused=false;pausedSubIdx=null;
-  renderSubs(currentView,mode);scrollToSub(idx,mode);
-  const cp=getCurPlayer(mode);
-  const start=SUBS[idx].start;
-  const end=playMode==='single'?SUBS[idx].end:(SUBS[idx+1]?.end??SUBS[idx].end);
-  cp.seekTo(start,true);cp.playVideo();
-  if(timeoutId)clearTimeout(timeoutId);
-  timeoutId=setTimeout(()=>{cp.pauseVideo();playingSubIdx=null;renderSubs(currentView,mode);},(end-start)*1000);
-}
-
-function setLayout(newMode){
-  layoutMode=newMode;
-  document.getElementById('horiz-root').classList.toggle('hidden',newMode!=='horizontal');
-  document.getElementById('vert-root').classList.toggle('hidden',newMode==='horizontal');
-  renderSubs(currentView,newMode);
-}
-
-function syncModeBtns(){
-  const label=playMode==='single'?'▶ 한줄 재생':'▶▶ 다음줄까지';
-  ['h-mode-btn','v-mode-btn'].forEach(id=>{const b=document.getElementById(id);if(!b)return;b.textContent=label;b.classList.toggle('active',playMode==='next');});
-}
-
-function setHandlers(){
-  document.getElementById('h-layout-btn').onclick=()=>setLayout('vertical');
-  document.getElementById('v-layout-btn').onclick=()=>setLayout('horizontal');
-  document.getElementById('h-show-all').onclick=function(){currentView='all';this.classList.add('active');document.getElementById('h-show-learned').classList.remove('active');renderSubs('all','horizontal');};
-  document.getElementById('h-show-learned').onclick=function(){currentView='learned';this.classList.add('active');document.getElementById('h-show-all').classList.remove('active');renderSubs('learned','horizontal');};
-  document.getElementById('v-show-all').onclick=function(){currentView='all';this.classList.add('active');document.getElementById('v-show-learned').classList.remove('active');renderSubs('all','vertical');};
-  document.getElementById('v-show-learned').onclick=function(){currentView='learned';this.classList.add('active');document.getElementById('v-show-all').classList.remove('active');renderSubs('learned','vertical');};
-  document.getElementById('h-mode-btn').onclick=()=>{playMode=playMode==='single'?'next':'single';syncModeBtns();};
-  document.getElementById('v-mode-btn').onclick=()=>{playMode=playMode==='single'?'next':'single';syncModeBtns();};
-  document.getElementById('h-trans-btn').onclick=()=>toggleTranslate('horizontal');
-  document.getElementById('v-trans-btn').onclick=()=>toggleTranslate('vertical');
-}
-
-function onYouTubeIframeAPIReady(){playerH=new YT.Player('player-h');playerVert=new YT.Player('player-vert');}
-window.onYouTubeIframeAPIReady=onYouTubeIframeAPIReady;
-
+function doPlay(i,m){selIdx=i;const cp=m==='v'?pv:ph;const re=m==='v'?renderV:renderH;re();if(!cp?.seekTo)return;const s=cp.getPlayerState();if(playing!==i){startPlay(i,m);return;}if(s===1){cp.pauseVideo();if(tid)clearTimeout(tid);paused=true;pausedIdx=i;playing=null;re();return;}if(s===2&&paused&&pausedIdx===i){startPlay(i,m);return;}startPlay(i,m);}
+function startPlay(i,m){playing=i;paused=false;pausedIdx=null;const re=m==='v'?renderV:renderH;re();scrollTo(i,m);const cp=m==='v'?pv:ph;const s=SUBS[i].start,e=playMode==='single'?SUBS[i].end:(SUBS[i+1]?SUBS[i+1].end:SUBS[i].end);cp.seekTo(s,true);cp.playVideo();if(tid)clearTimeout(tid);tid=setTimeout(()=>{cp.pauseVideo();playing=null;re();},(e-s)*1000);}
+function toggleTr(m){showKor=!showKor;if(!showKor)openK.clear();const lbl=showKor?'번역 ✓':'번역';['v-tr','h-tr'].forEach(id=>{const b=document.getElementById(id);if(b){b.textContent=lbl;b.classList.toggle('on',showKor);}});layout==='vert'?renderV():renderH();}
+function setLayout(m){layout=m;document.getElementById('vert').classList.toggle('off',m==='horiz');document.getElementById('horiz').classList.toggle('on',m==='horiz');m==='horiz'?renderH():renderV();}
+function syncMode(){const lbl=playMode==='single'?'▶ 한줄':'▶▶ 두줄';['v-mode','h-mode'].forEach(id=>{const b=document.getElementById(id);if(b){b.textContent=lbl;b.classList.toggle('on',playMode==='next');}});}
+window.onYouTubeIframeAPIReady=function(){pv=new YT.Player('pv');ph=new YT.Player('ph');};
 window.onload=function(){
-  loadStatus();setHandlers();setLayout('vertical');updateStats();
-  const tag=document.createElement('script');tag.src='https://www.youtube.com/iframe_api';document.body.appendChild(tag);
-};
+  function setSubPadding(){const h=document.querySelector('.vert-top')?.offsetHeight||0;const sv=document.getElementById('sv');if(sv)sv.style.paddingTop=(h+8)+'px';}
+  setSubPadding();window.addEventListener('resize',setSubPadding);
+  load();applyFs(fs);applyHfs(hfs);
+  // 세로모드 버튼
+  document.getElementById('v-mode').onclick=()=>{playMode=playMode==='single'?'next':'single';syncMode();};
+  document.getElementById('v-tr').onclick=()=>toggleTr('v');
+  document.getElementById('v-lay').onclick=()=>setLayout('horiz');
+  document.getElementById('v-fnt').onclick=e=>{e.stopPropagation();document.getElementById('fpop').classList.toggle('open');};
+  document.querySelectorAll('.fpo').forEach(b=>b.onclick=e=>{e.stopPropagation();applyFs(+b.dataset.s);renderV();document.getElementById('fpop').classList.remove('open');});
+  // 가로모드 버튼
+  document.getElementById('h-mode').onclick=()=>{playMode=playMode==='single'?'next':'single';syncMode();};
+  document.getElementById('h-tr').onclick=()=>toggleTr('h');
+  document.getElementById('h-lay').onclick=()=>setLayout('vert');
+  document.addEventListener('click',()=>{document.getElementById('fpop').classList.remove('open');document.getElementById('h-fpop')?.classList.remove('open');});
+  document.getElementById('h-fnt').onclick=e=>{e.stopPropagation();document.getElementById('h-fpop').classList.toggle('open');};
+  document.querySelectorAll('.h-fpo').forEach(b=>b.onclick=e=>{e.stopPropagation();applyHfs(+b.dataset.s);renderH();document.getElementById('h-fpop').classList.remove('open');});renderV();const tag=document.createElement('script');tag.src='https://www.youtube.com/iframe_api';document.body.appendChild(tag);};
 </script>
 </body>
 </html>
